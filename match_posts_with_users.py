@@ -32,7 +32,7 @@ WHERE
     AND (
         EXISTS (
             SELECT 1 FROM post_tags pt
-            JOIN user_tags ut ON ut.tag_id = pt.tad_id
+            JOIN user_tags ut ON ut.tag_id = pt.tag_id
             WHERE pt.post_id = :post_id AND ut.user_id = u.id
         )
     )
