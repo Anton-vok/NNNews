@@ -18,10 +18,6 @@ NOTIFY_LABELS = {
 }
 
 
-def setup(dp):
-    dp.include_router(router)
-
-
 def years():
     today = date.today()
     y = today.year
