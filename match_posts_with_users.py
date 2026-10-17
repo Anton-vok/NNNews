@@ -39,6 +39,7 @@ WHERE
 """
 
 def match_posts_with_users(db_path):
+    print("hi")
     connection = sqlite3.connect(str(db_path))
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute("BEGIN IMMEDIATE")
@@ -50,6 +51,7 @@ def match_posts_with_users(db_path):
     )]
 
     for post_id in post_ids:
+        print("1")
         connection.execute(INSERT_DELIVERIES, {"post_id": post_id})
         connection.execute(
             "UPDATE posts SET is_processed = 1 WHERE id = ?", (post_id,)

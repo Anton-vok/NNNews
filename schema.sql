@@ -42,7 +42,7 @@ CREATE TABLE posts (
     author_tg_id       INTEGER,
     created_at         TEXT DEFAULT CURRENT_TIMESTAMP,
     moderation_status  TEXT NOT NULL DEFAULT 'pending' CHECK ( moderation_status IN ('pending', 'approved', 'rejected')),
-    source             TEXT,
+    source             INTEGER REFERENCES ,
     publication_id     TEXT,
     is_processed       INTEGER NOT NULL DEFAULT 0
 );
