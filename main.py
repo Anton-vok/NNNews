@@ -7,6 +7,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 
 from init_db import init_db
+from reg import router as reg_router
 
 load_dotenv()
 
@@ -21,15 +22,9 @@ if init_db() == -1:
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-@dp.message(CommandStart())
-async def start(message: Message):
-    await message.answer("Привет! Это NNNews bot")
-
-@dp.message(F.text)
-async def echo(message: Message):
-    await message.answer(message.text)
 
 async def main():
+    dp.include_router(reg_router)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
