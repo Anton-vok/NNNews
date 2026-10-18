@@ -16,7 +16,9 @@ async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
                 p.description,
                 p.image,
                 p.button_text,
-                p.button_url
+                p.button_url,
+                p.location,
+                p.starts_at
             FROM deliveries d
             JOIN users u ON d.user_id = u.id
             JOIN posts p ON d.post_id = p.id
@@ -35,9 +37,10 @@ async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
         for task in sendings:
             delivery_id = task["delivery_id"]
             tg_id = task["tg_id"]
-            
+            location = task["location"] if task["location"] else ""
+            start = task["starts_at"] if task["starts_at"] else ""
             description = task["description"] if task["description"] else ""
-            message_text = f"<b>{task['title']}</b>\n\n{description}"
+            message_text = f"<b>{task['title']}</b>\n\n{location}\n{start}\n{description}"
 
             reply_markup = None
             if task["button_text"] and task["button_url"]:
