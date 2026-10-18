@@ -14,7 +14,8 @@ CREATE TABLE users (
     program_id     INTEGER REFERENCES programs(id),
     degree         TEXT CHECK ( degree IN ('BAK','MAG')),
     faculty_id     INTEGER REFERENCES faculties(id),
-    campus_id      INTEGER REFERENCES campuses(id)
+    campus_id      INTEGER REFERENCES campuses(id),
+    is_processed   INTEGER
 );
 
 CREATE TABLE user_tags (
@@ -41,7 +42,8 @@ CREATE TABLE posts (
     organizer_id       INTEGER REFERENCES organizations(id),
     author_tg_id       INTEGER,
     created_at         TEXT DEFAULT CURRENT_TIMESTAMP,
-    moderation_status  TEXT NOT NULL DEFAULT 'pending' CHECK ( moderation_status IN ('pending', 'approved', 'rejected')),
+    moderation_status  TEXT NOT NULL DEFAULT 'pending' CHECK ( moderation_status IN ('pending', 'approved', 'rejected', 'moderation')),
+    reason             TEXT,
     source             INTEGER,
     publication_id     TEXT,
     is_processed       INTEGER NOT NULL DEFAULT 0

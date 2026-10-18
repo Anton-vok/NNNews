@@ -40,7 +40,8 @@ async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
             location = task["location"] if task["location"] else ""
             start = task["starts_at"] if task["starts_at"] else ""
             description = task["description"] if task["description"] else ""
-            message_text = f"<b>{task['title']}</b>\n\n{location}\n{start}\n{description}"
+            hi_message = "Добавлено новое мероприятие"
+            message_text = f"+{hi_message}\n\n<b>{task['title']}</b>\n\n{description}\n\n📍 {location}\n⏰ {start}"
 
             reply_markup = None
             if task["button_text"] and task["button_url"]:

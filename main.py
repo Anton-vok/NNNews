@@ -37,7 +37,7 @@ async def mailing_loop():
                 await send_deliveries(conn, bot)
         except Exception:
             logging.exception("Ошибка рассылки")   # цикл не должен умирать
-        await asyncio.sleep(1)
+        await asyncio.sleep(30)
 
 async def main():
     task = asyncio.create_task(mailing_loop())
