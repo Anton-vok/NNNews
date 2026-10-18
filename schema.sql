@@ -42,15 +42,15 @@ CREATE TABLE posts (
     author_tg_id       INTEGER,
     created_at         TEXT DEFAULT CURRENT_TIMESTAMP,
     moderation_status  TEXT NOT NULL DEFAULT 'pending' CHECK ( moderation_status IN ('pending', 'approved', 'rejected')),
-    source             INTEGER REFERENCES ,
+    source             INTEGER,
     publication_id     TEXT,
     is_processed       INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE post_tags (
     post_id INTEGER REFERENCES posts(id),
-    tad_id INTEGER REFERENCES tage(id),
-    PRIMARY KEY (post_id, tad_id)
+    tag_id INTEGER REFERENCES tage(id),
+    PRIMARY KEY (post_id, tag_id)
 );
 CREATE TABLE post_campuses (
     post_id   INTEGER REFERENCES posts(id),
