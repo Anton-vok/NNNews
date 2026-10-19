@@ -76,10 +76,11 @@ CREATE TABLE post_years (
 );
 
 CREATE TABLE deliveries (
-    id       INTEGER PRIMARY KEY,
-    post_id  INTEGER NOT NULL REFERENCES posts(id),
-    user_id  INTEGER NOT NULL REFERENCES users(id),
-    sent     INTEGER NOT NULL DEFAULT 0,
-    liked    INTEGER CHECK ( liked in (-1, 0, 1)),
+    id        INTEGER PRIMARY KEY,
+    post_id   INTEGER NOT NULL REFERENCES posts(id),
+    user_id   INTEGER NOT NULL REFERENCES users(id),
+    sent      INTEGER NOT NULL DEFAULT 0,
+    liked     INTEGER CHECK ( liked in (-1, 0, 1)),
+    mail_date TEXT DEFAULT '2000-01-01 00:00:00' CHECK (datetime(mail_date) IS NOT NULL),
     UNIQUE (post_id, user_id)
 );
