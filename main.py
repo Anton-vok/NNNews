@@ -9,6 +9,7 @@ import aiosqlite
 
 
 from match_posts_with_users import match_posts_with_users
+from match_users_with_posts import match_users_with_posts
 from mailing import send_deliveries, moderation
 
 load_dotenv()
@@ -35,6 +36,7 @@ async def mailing_loop():
     while True:
         try:
             await asyncio.to_thread(match_posts_with_users, DB_PATH)
+            await asyncio.to_thread(match_users_with_posts, DB_PATH)
             async with aiosqlite.connect(DB_PATH) as conn:
                 await send_deliveries(conn, bot)
             async with aiosqlite.connect(DB_PATH) as conn:

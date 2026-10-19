@@ -12,9 +12,9 @@ users_data = {}
 DEGREES = [("БАК", "BAK"), ("МАГ", "MAG")]
 
 NOTIFY_OPTIONS = {
-    "all": ("Да, все", 1),
+    "all": ("Да, все", 0),
     "top5": ("Да, 5 самых актуальных", -1),
-    "none": ("Нет", 0),
+    "none": ("Нет", 1),
 }
 
 NOTIFY_LABELS = {k: v[0] for k, v in NOTIFY_OPTIONS.items()}
