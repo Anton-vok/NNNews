@@ -7,12 +7,14 @@ from reg import router as reg_router
 from add_post import router as add_router
 import aiosqlite
 
+
 from match_posts_with_users import match_posts_with_users
-from mailing import send_deliveries
+from mailing import send_deliveries, moderation
 
 load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+GR_ID = os.getenv("ADMIN_CHAT_ID")
 if not TOKEN:
     raise RuntimeError("Нет токена в .env")
 
@@ -35,14 +37,17 @@ async def mailing_loop():
             await asyncio.to_thread(match_posts_with_users, DB_PATH)
             async with aiosqlite.connect(DB_PATH) as conn:
                 await send_deliveries(conn, bot)
+            async with aiosqlite.connect(DB_PATH) as conn:
+                await moderation(conn, bot, GR_ID)
         except Exception:
             logging.exception("Ошибка рассылки")   # цикл не должен умирать
-        await asyncio.sleep(30)
+        await asyncio.sleep(1)
 
 async def main():
     task = asyncio.create_task(mailing_loop())
     try:
-        await dp.start_polling(bot)
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await dp.start_polling(bot, conn=conn)
     finally:
         task.cancel()
         await bot.session.close()

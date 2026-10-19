@@ -1,6 +1,6 @@
 import sqlite3
 
-def fill_hse_nn_database(db_path="hse_nn.db"):
+def fill_hse_nn_database(db_path="NNNewsDB.sqlite"):
     with sqlite3.connect(db_path) as conn:
         cur = conn.cursor()
         cur.execute("PRAGMA foreign_keys = ON;")
@@ -22,7 +22,7 @@ def fill_hse_nn_database(db_path="hse_nn.db"):
             cur.execute("INSERT INTO faculties (name, campus_id) VALUES (?, ?)", (name, campus_id))
             faculty_ids[name] = cur.lastrowid
 
-        tags = []
+        tags = ["CS","AI"]
         
         tag_ids = {}
         for tag_name in tags:
@@ -78,11 +78,12 @@ def fill_hse_nn_database(db_path="hse_nn.db"):
             ("Управление финансами компании (38.04.02)", faculty_ids["Факультет менеджмента"], "MAG"),
             ("Финансовые технологии", faculty_ids["Факультет информатики, математики и компьютерных наук"], "MAG"),
             ("Финансы", faculty_ids["Факультет экономики"], "MAG"),
-            ("Цифровой маркетинг", faculty_ids["Факультет менеджмента"], "MAG"),
+            ("Цифровой маркетинг МАГ", faculty_ids["Факультет менеджмента"], "MAG"),
         ]
 
         program_ids = {}
         for name, fid, degree in programs_data + magistracy_data:
+            print(name, fid, degree)
             cur.execute(
                 "INSERT INTO programs (name, faculty_id, degree) VALUES (?, ?, ?)",
                 (name, fid, degree),
