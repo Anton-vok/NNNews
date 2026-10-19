@@ -4,7 +4,7 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE campuses      (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL );
 CREATE TABLE faculties     (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, campus_id INTEGER REFERENCES campuses(id));
 CREATE TABLE tage          (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL );
-CREATE TABLE programs      (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, faculty_id INTEGER REFERENCES faculties(id));
+CREATE TABLE programs      (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, faculty_id INTEGER REFERENCES faculties(id), degree TEXT CHECK ( degree IN ('BAK','MAG')));
 CREATE TABLE organizations (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL );
 
 CREATE TABLE users (
