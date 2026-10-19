@@ -75,7 +75,7 @@ async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
             except TelegramRetryAfter as e:
                 logging.warning(f"Превышен лимит запросов. Повторная попытка через {e.retry_after} секунд.")
                 await asyncio.sleep(e.retry_after)
-                continue
+                break
 
             except TelegramForbiddenError as e:
                 await cursor.execute(
@@ -101,3 +101,76 @@ async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
             await conn.commit()
             
             await asyncio.sleep(0.05)
+
+
+async def moderation(conn: aiosqlite.Connection, bot: Bot, moder_chat):
+    conn.row_factory = aiosqlite.Row
+    async with conn.cursor() as cursor:
+        query = """
+            SELECT
+                p.title,
+                p.image,
+                p.description,
+                p.button_text,
+                p.button_url,
+                p.location,
+                p.starts_at,
+                p.id
+            FROM posts p
+            WHERE p.moderation_status = 'pending'
+        """
+
+        await cursor.execute(query)
+
+        moderate = await cursor.fetchall()
+
+        if not moderate:
+            logging.info("Нет постов для модерации.")
+            return
+
+        for task in moderate:
+            description = task["description"] if task["description"] else ""
+            location = task["location"] if task["location"] else ""
+            start = task["starts_at"] if task["starts_at"] else ""
+            hi_message = "Добавлено новое мероприятие"
+
+            message_text = f"+{hi_message}\n\n<b>{task['title']}</b>\n\n{description}\n\n📍 {location}\n⏰ {start}"
+
+            inline_keyboard = []
+            if task["button_text"] and task["button_url"]:
+                inline_keyboard.append([InlineKeyboardButton(text=task["button_text"], url=task["button_url"])])
+
+            inline_keyboard.append([
+                InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"mod:approved:{task['id']}"),
+                InlineKeyboardButton(text="❌ Отменить", callback_data=f"mod:rejected:{task['id']}")
+            ])
+
+            reply_markup = InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
+
+            try:
+                if task["image"]:
+                    await bot.send_photo(
+                        chat_id=moder_chat,
+                        photo=task["image"],
+                        caption=message_text,
+                        parse_mode="HTML",
+                        reply_markup=reply_markup
+                    )
+                else:
+                    await bot.send_message(
+                        chat_id=moder_chat,
+                        text=message_text,
+                        parse_mode="HTML",
+                        reply_markup=reply_markup
+                    )
+
+                await cursor.execute(
+                    "UPDATE posts SET moderation_status = 'moderation' WHERE id = ?",
+                    (task["id"],)
+                )
+                logging.info(f"пост {task['id']} успешно отправлен на модерацию.")
+
+            except Exception as e:
+                logging.error(f"Ошибка при отправке поста {task['id']} на модерацию: {e}")
+
+        await conn.commit()
