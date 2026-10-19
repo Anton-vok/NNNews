@@ -7,6 +7,8 @@ from aiogram.exceptions import TelegramBadRequest
 from parsers import *
 import sqlite3
 from contextlib import closing
+import aiosqlite
+import logging
 
 
 
@@ -183,7 +185,7 @@ def create_post(answer):
             """INSERT INTO posts (title, description, button_text, button_url,
                    location, starts_at, organizer_id,
                    created_at, moderation_status, source)
-               VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), 'approved', 'bot')""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), 'pending', 'bot')""",
             (answer["title"], answer.get("description"), answer.get("button_text"),
              answer.get("button_url"), answer.get("location"),
              answer["starts_at"], answer["organizer_id"]),
@@ -197,3 +199,56 @@ def create_post(answer):
             [(post_id, t) for t in answer["tags"]])
         conn.commit()
     return post_id
+
+
+@router.callback_query(F.data.startswith("mod:"))
+async def handle_moderation_click(callback: CallbackQuery, conn: aiosqlite.Connection):
+    try:
+        _, action, post_id_str = callback.data.split(":")
+        post_id = int(post_id_str)
+    except (ValueError, IndexError):
+        logging.error(f"Неверный формат callback_data: {callback.data}")
+        await callback.answer("Ошибка структуры данных кнопки", show_alert=True)
+        return
+
+    if action == "approved":
+        new_status = "approved"
+        verdict = "\n\n🟢 <b>ПОСТ ПРИНЯТ</b>"
+        alert_text = "Пост успешно одобрен!"
+    elif action == "rejected":
+        new_status = "rejected"
+        verdict = "\n\n🔴 <b>ПОСТ ОТМЕНЕН</b>"
+        alert_text = "Пост отклонен."
+    else:
+        return
+
+    try:
+        async with conn.cursor() as cursor:
+            await cursor.execute(
+                "UPDATE posts SET moderation_status = ? WHERE id = ?",
+                (new_status, post_id)
+            ) 
+        await conn.commit()
+        logging.info(f"Статус поста {post_id} изменен на '{new_status}' модератором {callback.from_user.id}")
+
+    except Exception as e:
+        logging.error(f"Ошибка при обновлении статуса в БД для поста {post_id}: {e}")
+        await callback.answer("Критическая ошибка при сохранении в БД", show_alert=True)
+        return
+
+    await callback.answer(text=alert_text, show_alert=False)
+
+    if callback.message.photo:
+        current_caption = callback.message.caption or ""
+        await callback.message.edit_caption(
+            caption=f"{current_caption}{verdict}",
+            reply_markup=None,
+            parse_mode="HTML"
+        )
+    else:
+        current_text = callback.message.text or ""
+        await callback.message.edit_text(
+            text=f"{current_text}{verdict}",
+            reply_markup=None,
+            parse_mode="HTML"
+        )
