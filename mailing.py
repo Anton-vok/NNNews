@@ -4,6 +4,7 @@ from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError, TelegramRetryAfter, TelegramForbiddenError
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import aiosqlite
+from datetime import datetime
 
 async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
     conn.row_factory = aiosqlite.Row
@@ -18,11 +19,12 @@ async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
                 p.button_text,
                 p.button_url,
                 p.location,
-                p.starts_at
+                p.starts_at,
+                d.mail_date
             FROM deliveries d
             JOIN users u ON d.user_id = u.id
             JOIN posts p ON d.post_id = p.id
-            WHERE d.sent = 0
+            WHERE d.sent = 0 AND d.mail_date <= datetime('now', 'localtime')
             LIMIT 100;
         """
         await cursor.execute(query)
@@ -35,6 +37,12 @@ async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
         logging.info(f"Найдено {len(sendings)} рассылок для отправки.")
 
         for task in sendings:
+            now = datetime.now()
+            date = datetime.strptime(task["mail_date"], "%Y-%m-%d %H:%M:%S")
+
+            if now < date:
+                continue
+
             delivery_id = task["delivery_id"]
             tg_id = task["tg_id"]
             location = task["location"] if task["location"] else ""
@@ -49,6 +57,7 @@ async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
                     [InlineKeyboardButton(text=task["button_text"], url=task["button_url"])]
                 ])
 
+        
             try:
                 if task["image"]:
                     await bot.send_photo(
@@ -66,40 +75,40 @@ async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
                         reply_markup=reply_markup
                     )
 
-                await cursor.execute(
+                await conn.execute(
                     "UPDATE deliveries SET sent = 1 WHERE id = ?",
                     (delivery_id,)
                 )
                 logging.info(f"пост {delivery_id} успешно отправлен пользователю {tg_id}.")
-            
+        
             except TelegramRetryAfter as e:
                 logging.warning(f"Превышен лимит запросов. Повторная попытка через {e.retry_after} секунд.")
                 await asyncio.sleep(e.retry_after)
                 break
 
             except TelegramForbiddenError as e:
-                await cursor.execute(
+                await conn.execute(
                     "UPDATE deliveries SET sent = -2 WHERE id = ?",
                     (delivery_id,)
                 )
                 logging.warning(f"Пользователь {tg_id} заблокировал бота. Пост {delivery_id} не будет отправлен.")
-            
+        
             except TelegramAPIError as e:
-                await cursor.execute(
+                await conn.execute(
                     "UPDATE deliveries SET sent = -1 WHERE id = ?",
                     (delivery_id,)
                 )
                 logging.error(f"Ошибка при отправке поста {delivery_id} пользователю {tg_id}: {e}")
 
             except Exception as e:
-                await cursor.execute(
+                await conn.execute(
                     "UPDATE deliveries SET sent = -1 WHERE id = ?",
                     (delivery_id,)
                 )
                 logging.error(f"Системная ошибка при обработке доставки {delivery_id}: {e}")
 
             await conn.commit()
-            
+        
             await asyncio.sleep(0.05)
 
 
@@ -164,7 +173,7 @@ async def moderation(conn: aiosqlite.Connection, bot: Bot, moder_chat):
                         reply_markup=reply_markup
                     )
 
-                await cursor.execute(
+                await conn.execute(
                     "UPDATE posts SET moderation_status = 'moderation' WHERE id = ?",
                     (task["id"],)
                 )
@@ -173,4 +182,4 @@ async def moderation(conn: aiosqlite.Connection, bot: Bot, moder_chat):
             except Exception as e:
                 logging.error(f"Ошибка при отправке поста {task['id']} на модерацию: {e}")
 
-        await conn.commit()
+            await conn.commit()
