@@ -29,6 +29,17 @@ def fill_hse_nn_database(db_path="hse_nn.db"):
             cur.execute("INSERT INTO tage (name) VALUES (?)", (tag_name,))
             tag_ids[tag_name] = cur.lastrowid
 
+        organizations = [
+            "Студенческий совет НИУ ВШЭ — Нижний Новгород",
+            "Партнеры",
+            "Официальное"
+        ]
+        
+        org_ids = {}
+        for org_name in organizations:
+            cur.execute("INSERT INTO organizations (name) VALUES (?)", (org_name,))
+            org_ids[org_name] = cur.lastrowid
+
         programs_data = [
             ("Дизайн", faculty_ids["Школа дизайна"], "BAK"),
             ("Иностранные языки и межкультурная бизнес-коммуникация", faculty_ids["Факультет гуманитарных наук"], "BAK"),
