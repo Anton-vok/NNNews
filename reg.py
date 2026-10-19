@@ -11,11 +11,14 @@ users_data = {}
 
 DEGREES = [("БАК", "BAK"), ("МАГ", "MAG")]
 
-NOTIFY_LABELS = {
-    "all": "Да, все",
-    "top5": "Да, 5 самых актуальных",
-    "none": "Нет",
+NOTIFY_OPTIONS = {
+    "all": ("Да, все", 1),
+    "top5": ("Да, 5 самых актуальных", -1),
+    "none": ("Нет", 0),
 }
+
+NOTIFY_LABELS = {k: v[0] for k, v in NOTIFY_OPTIONS.items()}
+NOTIFY_DB_VALUES = {k: v[1] for k, v in NOTIFY_OPTIONS.items()}
 
 
 def years():
@@ -187,6 +190,7 @@ async def on_org(cb: CallbackQuery):
     await cb.answer()
 
 
+
 @router.callback_query(F.data == "orgs_done")
 async def on_orgs_done(cb: CallbackQuery):
     tg_id = cb.from_user.id
@@ -212,6 +216,8 @@ async def on_notify(cb: CallbackQuery):
     users_data[tg_id]["notify"] = cb.data.split(":")[1]
     d = users_data[tg_id]
 
+    is_processed_value = NOTIFY_DB_VALUES[d["notify"]]
+
     conn = sqlite3.connect("NNNewsDB.sqlite")
     cur = conn.cursor()
 
@@ -220,16 +226,16 @@ async def on_notify(cb: CallbackQuery):
 
     if row is None:
         cur.execute(
-            "INSERT INTO users (tg_id, admission_year, program_id, degree, faculty_id, campus_id) VALUES (?, ?, ?, ?, ?, ?)",
-            (tg_id, d["year"], d["program_id"], d["degree"], d["faculty_id"], d["campus_id"])
+            "INSERT INTO users (tg_id, admission_year, program_id, degree, faculty_id, campus_id, is_processed) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (tg_id, d["year"], d["program_id"], d["degree"], d["faculty_id"], d["campus_id"], is_processed_value)
         )
         cur.execute("SELECT id FROM users WHERE tg_id = ?", (tg_id,))
         user_id = cur.fetchone()[0]
     else:
         user_id = row[0]
         cur.execute(
-            "UPDATE users SET admission_year = ?, program_id = ?, degree = ?, faculty_id = ?, campus_id = ? WHERE tg_id = ?",
-            (d["year"], d["program_id"], d["degree"], d["faculty_id"], d["campus_id"], tg_id)
+            "UPDATE users SET admission_year = ?, program_id = ?, degree = ?, faculty_id = ?, campus_id = ?, is_processed = ? WHERE tg_id = ?",
+            (d["year"], d["program_id"], d["degree"], d["faculty_id"], d["campus_id"], is_processed_value, tg_id)
         )
 
     cur.execute("DELETE FROM user_tags WHERE user_id = ?", (user_id,))
