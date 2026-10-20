@@ -20,15 +20,16 @@ class Form(StatesGroup):
 
 
 QUESTIONS = [
-    {"key": "title",       "text": "Название?",                     "shift" : 0, "parse": parse_title},
-    {"key": "description", "text": "Описание?",                     "shift" : 1},
-    {"key": "button_text", "text":"Текст для кнопки",               "shift" : 2,},
-    {"key": "button_url",  "text":"Ссылка для кнопки",              "shift" : 0, "parse": parse_url},
-    {"key": "location",    "text":"Место проведения",               "shift" : 1,},
-    {"key": "starts_at",   "text":"Время проведения",               "shift" : 0, "parse": parse_date},
-    {"key": "organizer_id","text":"Выберете ваш тип организации",   "shift" : 0, "options": lambda: db_options("organizations"), "multi": False, "empty_ok": False},
-    {"key": "tags",        "text":"Выберете подходящте теги",       "shift" : 0, "options": lambda: db_options("tage"),     "multi": True, "empty_ok": False},
-    {"key": "campuses",    "text":"Выберете подходящие кампусы",    "shift" : 0, "options": lambda: db_options("campuses"), "multi": True, "empty_ok": False}
+    {"key": "title",       "text": "Название?",                      "shift" : 0, "parse": parse_title},
+    {"key": "image",       "text": "Отправьте картинку (ОДНО ФОТО)", "shift" : 1, "photo": True},
+    {"key": "description", "text": "Описание?",                      "shift" : 1},
+    {"key": "button_text", "text":"Текст для кнопки",                "shift" : 2,},
+    {"key": "button_url",  "text":"Ссылка для кнопки",               "shift" : 0, "parse": parse_url},
+    {"key": "location",    "text":"Место проведения",                "shift" : 1,},
+    {"key": "starts_at",   "text":"Время проведения",                "shift" : 0, "parse": parse_date},
+    {"key": "organizer_id","text":"Выберете ваш тип организации",    "shift" : 0, "options": lambda: db_options("organizations"), "multi": False, "empty_ok": False},
+    {"key": "tags",        "text":"Выберете подходящте теги",        "shift" : 0, "options": lambda: db_options("tage"),     "multi": True, "empty_ok": False},
+    {"key": "campuses",    "text":"Выберете подходящие кампусы",     "shift" : 0, "options": lambda: db_options("campuses"), "multi": True, "empty_ok": False}
 ]
 
 
@@ -73,8 +74,8 @@ async def send_question(msg, state, error=""):
 
     idx = s["idx"]
     if idx >= len(QUESTIONS):
-        create_post(s["answer"])
-        await msg.answer(f"Готово:")
+        create_post(s["answer"], s["author_id"])
+        await msg.answer(f"Спасибо, пост отправлен на модерацию, по результатам вам придет сообщение")
         await state.clear()
         return
     text = QUESTIONS[idx]["text"]
@@ -111,7 +112,7 @@ async def safe_delete(bot, chat_id, message_id):
 async def add_post(message: Message, state: FSMContext):
     await safe_delete(message.bot, message.chat.id, message.message_id)
     await state.set_state(Form.filling)
-    await state.update_data(idx=0, answer={}, selected=[])
+    await state.update_data(idx=0, answer={}, selected=[], author_id = message.from_user.id)
     await send_question(message, state)
 
 @router.callback_query(Form.filling, F.data == "forward")
@@ -127,7 +128,8 @@ async def forward(callback: CallbackQuery, state: FSMContext):
 async def on_text(message: Message, state: FSMContext):
     await safe_delete(message.bot, message.chat.id, message.message_id)
     s = await state.get_data()
-    if "options" in QUESTIONS[s["idx"]]:
+    q = QUESTIONS[s["idx"]]
+    if "options" in q or q.get("photo"):
         return
     await submit_answer(message.text, message, state)
 
@@ -178,17 +180,17 @@ async def on_done(callback: CallbackQuery, state: FSMContext):
 
     await callback.answer()
 
-def create_post(answer):
+def create_post(answer, id):
     print(answer)
     with closing(sqlite3.connect("NNNewsDB.sqlite")) as conn:
         cur = conn.execute(
-            """INSERT INTO posts (title, description, button_text, button_url,
+            """INSERT INTO posts (title, image, description, button_text, button_url,
                    location, starts_at, organizer_id,
-                   created_at, moderation_status, source)
-               VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), 'pending', 'bot')""",
-            (answer["title"], answer.get("description"), answer.get("button_text"),
+                   created_at, source, author_tg_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), 'bot', ?)""",
+            (answer["title"], answer.get("image"), answer.get("description"), answer.get("button_text"),
              answer.get("button_url"), answer.get("location"),
-             answer["starts_at"], answer["organizer_id"]),
+             answer["starts_at"], answer["organizer_id"], id),
         )
         post_id = cur.lastrowid
         conn.executemany(
@@ -200,6 +202,16 @@ def create_post(answer):
         conn.commit()
     return post_id
 
+
+@router.message(Form.filling, F.photo)
+async def on_photo(message: Message, state: FSMContext):
+    s = await state.get_data()
+    q = QUESTIONS[s["idx"]]
+    file_id = message.photo[-1].file_id
+    await safe_delete(message.bot, message.chat.id, message.message_id)
+    if not q.get("photo"):
+        return
+    await submit_answer(file_id, message, state)
 
 @router.callback_query(F.data.startswith("mod:"))
 async def handle_moderation_click(callback: CallbackQuery, conn: aiosqlite.Connection):
