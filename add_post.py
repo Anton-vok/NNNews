@@ -227,15 +227,31 @@ async def handle_moderation_click(callback: CallbackQuery, conn: aiosqlite.Conne
         new_status = "approved"
         verdict = "\n\n🟢 <b>ПОСТ ПРИНЯТ</b>"
         alert_text = "Пост успешно одобрен!"
+        user_notification = "🟢 Ваш пост «<b>{title}</b>» успешно прошел модерацию и одобрен!"
     elif action == "rejected":
         new_status = "rejected"
         verdict = "\n\n🔴 <b>ПОСТ ОТМЕНЕН</b>"
         alert_text = "Пост отклонен."
+        user_notification = "🔴 К сожалению, ваш пост «<b>{title}</b>» был отклонен модерацией."
     else:
         return
 
+    author_tg_id = None
+    post_title = "Без названия"
+
     try:
+        conn.row_factory = aiosqlite.Row
         async with conn.cursor() as cursor:
+            
+            await cursor.execute(
+                "SELECT author_tg_id, title FROM posts WHERE id = ?",
+                (post_id,)
+            )
+            post_data = await cursor.fetchone()
+            if post_data:
+                author_tg_id = post_data["author_tg_id"]
+                post_title = post_data["title"]
+            
             await cursor.execute(
                 "UPDATE posts SET moderation_status = ? WHERE id = ?",
                 (new_status, post_id)
@@ -264,3 +280,71 @@ async def handle_moderation_click(callback: CallbackQuery, conn: aiosqlite.Conne
             reply_markup=None,
             parse_mode="HTML"
         )
+
+    if author_tg_id:
+        try:
+            text_to_send = user_notification.format(title=post_title)
+            await callback.bot.send_message(
+                chat_id=author_tg_id,
+                text=text_to_send,
+                parse_mode="HTML"
+            )
+            logging.info(f"Уведомление о статусе '{new_status}' отправлено пользователю {author_tg_id}")
+        except Exception as e:
+            logging.error(f"Не удалось отправить уведомление автору {author_tg_id}: {e}")
+
+
+@router.callback_query( F.data.startswith("remind:"))
+async def handle_remind_click(callback: CallbackQuery, conn: aiosqlite.Connection):
+    try:
+        _, post_id_str = callback.data.split(":")
+        post_id = int(post_id_str)
+    except (ValueError, IndexError):
+        await callback.answer("Ошибка данных кнопки", show_alert=True)
+        return
+
+    try:
+        conn.row_factory = aiosqlite.Row
+        async with conn.cursor() as cursor:
+            await cursor.execute(
+                "SELECT id FROM users WHERE tg_id = ?",
+                (callback.from_user.id,)
+            )
+            user_data = await cursor.fetchone()
+
+            if not user_data:
+                await callback.answer("Вы не зарегистрированы в системе!", show_alert=True)
+                return
+
+            user_id = user_data["id"]
+
+            await cursor.execute(
+                "SELECT resend FROM deliveries WHERE post_id = ? AND user_id  = ?",
+                (post_id, user_id)
+            )
+            delivery = await cursor.fetchone()
+
+            if delivery and delivery["resend"] == 1:
+                await callback.answer("Вы уже подписались на напоминание!", show_alert=True)
+                return
+            elif delivery and delivery["resend"] == 2:
+                await callback.answer("Напоминание по этому посту уже было отправлено.", show_alert=True)
+                return
+
+            if delivery:
+                await cursor.execute(
+                    "UPDATE deliveries SET resend = 1 WHERE post_id = ? AND user_id = ?",
+                    (post_id, user_id)
+                )
+            else:
+                await cursor.execute(
+                    "INSERT INTO deliveries (post_id, user_id, sent, resend) VALUES (?, ?, 1, 1)",
+                    (post_id, user_id)
+                )
+
+        await conn.commit()
+        await callback.answer("🔔 Напоминание успешно установлено!", show_alert=True)
+
+    except Exception as e:
+        logging.error(f"Ошибка при выставлении напоминания для поста {post_id}: {e}")
+        await callback.answer("Ошибка базы данных", show_alert=True)
