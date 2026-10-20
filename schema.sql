@@ -82,5 +82,6 @@ CREATE TABLE deliveries (
     sent      INTEGER NOT NULL DEFAULT 0,
     liked     INTEGER CHECK ( liked in (-1, 0, 1)),
     mail_date TEXT DEFAULT '2000-01-01 00:00:00' CHECK (datetime(mail_date) IS NOT NULL),
+    resend    INTEGER,
     UNIQUE (post_id, user_id)
 );
