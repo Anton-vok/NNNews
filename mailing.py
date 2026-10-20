@@ -199,11 +199,13 @@ async def send_reminders(conn: aiosqlite.Connection, bot: Bot):
                 p.button_text,
                 p.button_url,
                 p.location,
-                p.starts_at
+                p.starts_at,
+                d.mail_date
             FROM deliveries d
             JOIN users u ON d.user_id = u.id
             JOIN posts p ON d.post_id = p.id
-            WHERE d.resend = 1 AND datetime(date(p.starts_at) || ' 08:00:00') <= datetime('now', 'localtime')
+            WHERE d.resend = 1
+              AND datetime(date(d.mail_date) || ' 08:00:00') <= datetime('now', 'localtime')
             LIMIT 100;
         """
 
