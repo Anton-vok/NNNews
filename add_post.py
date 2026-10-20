@@ -20,16 +20,16 @@ class Form(StatesGroup):
 
 
 QUESTIONS = [
-    {"key": "title",       "text": "Название?",                      "shift" : 0, "parse": parse_title},
-    {"key": "image",       "text": "Отправьте картинку (ОДНО ФОТО)", "shift" : 1, "photo": True},
-    {"key": "description", "text": "Описание?",                      "shift" : 1},
-    {"key": "button_text", "text":"Текст для кнопки",                "shift" : 2,},
-    {"key": "button_url",  "text":"Ссылка для кнопки",               "shift" : 0, "parse": parse_url},
-    {"key": "location",    "text":"Место проведения",                "shift" : 1,},
-    {"key": "starts_at",   "text":"Время проведения",                "shift" : 0, "parse": parse_date},
-    {"key": "organizer_id","text":"Выберете ваш тип организации",    "shift" : 0, "options": lambda: db_options("organizations"), "multi": False, "empty_ok": False},
-    {"key": "tags",        "text":"Выберете подходящте теги",        "shift" : 0, "options": lambda: db_options("tage"),     "multi": True, "empty_ok": False},
-    {"key": "campuses",    "text":"Выберете подходящие кампусы",     "shift" : 0, "options": lambda: db_options("campuses"), "multi": True, "empty_ok": False}
+    {"key": "title",       "text": "Название мероприятия",                            "shift" : 0, "parse": parse_title},
+    {"key": "image",       "text": "Отправьте картинку (ОДНО ФОТО)",                  "shift" : 1, "photo": True},
+    {"key": "description", "text": "Описание мероприятия",                            "shift" : 1},
+    {"key": "button_text", "text": "Текст для кнопки",                                "shift" : 2},
+    {"key": "button_url",  "text": "Ссылка для кнопки",                               "shift" : 0, "parse": parse_url},
+    {"key": "location",    "text": "Место проведения",                                "shift" : 0,},
+    {"key": "starts_at",   "text": "Дата + время проведения (ГГГГ-ММ-ДД ЧЧ:ММ)",      "shift" : 0, "parse": parse_date},
+    {"key": "organizer_id","text": "Выберете ваш тип организации",                    "shift" : 0, "options": lambda: db_options("organizations"), "multi": False, "empty_ok": False},
+    {"key": "tags",        "text": "Выберете подходящие теги",                        "shift" : 0, "options": lambda: db_options("tage"),     "multi": True, "empty_ok": False},
+    {"key": "campuses",    "text": "Выберете подходящие кампусы",                     "shift" : 0, "options": lambda: db_options("campuses"), "multi": True, "empty_ok": False}
 ]
 
 
@@ -63,7 +63,7 @@ def build_kb(idx, selected=()):
             for oid, title in get_options(q)
         ])
     if q["shift"] != 0 and (not q.get("multi")):
-        rows.append([InlineKeyboardButton(text="Вперед", callback_data="forward")])
+        rows.append([InlineKeyboardButton(text="Пропустить", callback_data="forward")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 async def send_question(msg, state, error=""):
