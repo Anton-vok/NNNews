@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher
 from init_db import init_db
 from reg import router as reg_router
 from add_post import router as add_router
+from help_moderation import router as help_router
 import aiosqlite
 
 
@@ -27,6 +28,7 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 dp.include_router(reg_router)
 dp.include_router(add_router)
+dp.include_router(help_router)
 
 import logging
 
