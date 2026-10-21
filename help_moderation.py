@@ -8,7 +8,7 @@ router = Router()
 class HelpStates(StatesGroup):
     waiting_for_message = State()
 
-def setup_help_handlers(router, group_id):
+def setup_help_handlers(group_id):
     
     @router.message(F.text == "/help")
     async def help_command(msg: Message, state: FSMContext):
@@ -34,5 +34,3 @@ def setup_help_handlers(router, group_id):
             text=f"📩 От: {user} (ID: {msg.from_user.id})\n\n{msg.text}"
         )
         await msg.answer("Сообщение отправлено администрации.")
-
-setup_help_handlers(router, -1001234567890)

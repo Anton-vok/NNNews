@@ -27,7 +27,7 @@ def years():
     if today.month < 9:
         y = y - 1
     result = []
-    for i in range(6):
+    for i in range(4):
         result.append((str(y - i) + "/" + str(y - i + 1), y - i))
     return result
 

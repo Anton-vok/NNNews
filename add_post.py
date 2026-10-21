@@ -26,7 +26,7 @@ QUESTIONS = [
     {"key": "button_text", "text": "Текст для кнопки",                                "shift" : 2},
     {"key": "button_url",  "text": "Ссылка для кнопки",                               "shift" : 0, "parse": parse_url},
     {"key": "location",    "text": "Место проведения",                                "shift" : 0,},
-    {"key": "starts_at",   "text": "Дата + время проведения (ГГГГ-ММ-ДД ЧЧ:ММ)",      "shift" : 0, "parse": parse_date},
+    {"key": "starts_at",   "text": "Дата + время проведения (ММ-ДД ЧЧ:ММ)",      "shift" : 0, "parse": parse_date},
     {"key": "organizer_id","text": "Выберете ваш тип организации",                    "shift" : 0, "options": lambda: db_options("organizations"), "multi": False, "empty_ok": False},
     {"key": "tags",        "text": "Выберете подходящие теги",                        "shift" : 0, "options": lambda: db_options("tage"),     "multi": True, "empty_ok": False},
     {"key": "campuses",    "text": "Выберете подходящие кампусы",                     "shift" : 0, "options": lambda: db_options("campuses"), "multi": True, "empty_ok": False}

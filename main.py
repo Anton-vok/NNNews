@@ -7,6 +7,7 @@ from reg import router as reg_router
 from add_post import router as add_router
 from help_moderation import router as help_router
 import aiosqlite
+from help_moderation import setup_help_handlers
 
 
 from match_posts_with_users import match_posts_with_users
@@ -48,6 +49,7 @@ async def mailing_loop():
         await asyncio.sleep(1)
 
 async def main():
+    setup_help_handlers(GR_ID)
     task = asyncio.create_task(mailing_loop())
     try:
         async with aiosqlite.connect(DB_PATH) as conn:

@@ -5,6 +5,7 @@ from aiogram.exceptions import TelegramAPIError, TelegramRetryAfter, TelegramFor
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import aiosqlite
 from datetime import datetime
+from parsers import format_date
 
 async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
     conn.row_factory = aiosqlite.Row
@@ -47,10 +48,10 @@ async def send_deliveries(conn: aiosqlite.Connection, bot: Bot):
             delivery_id = task["delivery_id"]
             tg_id = task["tg_id"]
             location = task["location"] if task["location"] else ""
-            start = task["starts_at"] if task["starts_at"] else ""
+            start = format_date(task["starts_at"]) if task["starts_at"] else ""
             description = task["description"] if task["description"] else ""
             hi_message = "Добавлено новое мероприятие"
-            message_text = f"+{hi_message}\n\n<b>{task['title']}</b>\n\n{description}\n\n📍 {location}\n⏰ {start}"
+            message_text = f"<i>{hi_message}</i>\n<b>{task['title']}</b>\n\n{description}\n\n📍 {location}\n⏰ {start}"
 
             inline_keyboard = []
             if task["button_text"] and task["button_url"]:
@@ -141,10 +142,10 @@ async def moderation(conn: aiosqlite.Connection, bot: Bot, moder_chat):
         for task in moderate:
             description = task["description"] if task["description"] else ""
             location = task["location"] if task["location"] else ""
-            start = task["starts_at"] if task["starts_at"] else ""
+            start = format_date(task["starts_at"]) if task["starts_at"] else ""
             hi_message = "Добавлено новое мероприятие"
 
-            message_text = f"+{hi_message}\n\n<b>{task['title']}</b>\n\n{description}\n\n📍 {location}\n⏰ {start}"
+            message_text = f"<i>{hi_message}</i>\n<b>{task['title']}</b>\n\n{description}\n\n📍 {location}\n⏰ {start}"
 
             inline_keyboard = []
             if task["button_text"] and task["button_url"]:

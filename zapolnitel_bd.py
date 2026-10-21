@@ -30,7 +30,7 @@ def fill_hse_nn_database(db_path="NNNewsDB.sqlite"):
             tag_ids[tag_name] = cur.lastrowid
 
         organizations = [
-            "Студенческий совет НИУ ВШЭ — Нижний Новгород",
+            "Студенческие клубы — Нижний Новгород",
             "Партнеры",
             "Официальное"
         ]
